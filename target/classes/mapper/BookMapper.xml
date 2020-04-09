@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.gyt.bs.mapper.BookMapper">
+    <!--  书籍信息映射结果  -->
+    <resultMap id="Book" type="java.util.HashMap">
+        <id column="isbn" property="isbn"/>
+        <result column="book_id" property="bookId"/>
+        <result column="book_name" property="bookName"/>
+        <result column="author" property="author"/>
+        <result column="publish" property="publish"/>
+        <result column="publish_date" property="publishDate"/>
+        <result column="introduction" property="introduction"/>
+        <result column="price" property="price"/>
+        <result column="stock" property="stock"/>
+        <result column="buy_count" property="buyCount"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="category_name" property="categoryName"/>
+    </resultMap>
+
+    <!--  书本详细信息Vo  -->
+    <sql id="BookVo">
+        select isbn,
+               book_id,
+               book_name,
+               author,
+               publish,
+               publish_date,
+               introduction,
+               book.category_id,
+               price,
+               stock,
+               buy_count,
+               image_url,
+               category_name
+        from book,
+             category
+    </sql>
+
+    <!--  首页推荐书籍  -->
+    <select id="findBooksByDesc" resultMap="Book">
+        <include refid="BookVo"></include>
+        where book.category_id = category.category_id
+        order by book_id
+        desc
+        limit 0,5
+    </select>
+
+    <!--  首页热销书籍  -->
+    <select id="findHotBooks" resultMap="Book">
+        <include refid="BookVo"></include>
+        where book.category_id = category.category_id
+        order by buy_count desc
+        limit 0,10
+    </select>
+
+    <!--  分页查询  -->
+    <select id="findBooksByPage" resultMap="Book">
+        <include refid="BookVo"></include>
+        where book.category_id = category.category_id
+        <if test="categoryId != null">
+            and book.category_id = #{categoryId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            and concat(book_name,author,publish) like concat('%',#{keyword},'%')
+        </if>
+        limit #{page},#{size}
+    </select>
+
+    <select id="count" resultType="Integer">
+        select count(*) from book where 1=1
+        <if test="categoryId != null">
+            and book.category_id = #{categoryId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            and concat(book_name,author,publish) like concat('%',#{keyword},'%')
+        </if>
+    </select>
+
+    <!--  获取书籍的封面图片  -->
+    <select id="findImageUrl" resultType="String">
+        select image_url
+        from book
+        where book_id = #{bookId}
+    </select>
+
+    <insert id="insertBook" parameterType="cn.gyt.bs.entity.Book">
+        insert into book(isbn, book_name, author, publish, publish_date, introduction, category_id, price, stock,
+                         image_url)
+        values (#{isbn}, #{bookName}, #{author}, #{publish}, #{publishDate}, #{introduction}, #{categoryId}, #{price},
+                #{stock}, #{imageUrl})
+    </insert>
+
+    <!--  删除书籍信息  -->
+    <delete id="deleteBookById">
+        delete
+        from book
+        where book_id = #{bookId}
+    </delete>
+
+    <!--  更新书籍信息  -->
+    <update id="updateBookById" parameterType="cn.gyt.bs.entity.Book">
+        update book
+        <set>
+            <if test="isbn != null and isbn != ''">
+                isbn = #{isbn},
+            </if>
+            <if test="bookName != null and bookName != ''">
+                book_name = #{bookName},
+            </if>
+            <if test="categoryId != null and categoryId != ''">
+                category_id = #{categoryId},
+            </if>
+            <if test="author != null and author != ''">
+                author = #{author},
+            </if>
+            <if test="publish != null and publish != ''">
+                publish = #{publish},
+            </if>
+            <if test="publishDate != null and publishDate != ''">
+                publish_date = #{publishDate},
+            </if>
+            <if test="introduction != null and introduction != ''">
+                introduction = #{introduction},
+            </if>
+            <if test="price != null and price != ''">
+                price = #{price},
+            </if>
+            <if test="stock != null and stock != ''">
+                stock = #{stock},
+            </if>
+            <if test="imageUrl != null and iamgeUrl != ''">
+                image_url = #{image_url}
+            </if>
+        </set>
+        where book_id = #{bookId}
+    </update>
+
+    <!--  根据ID更新图片  -->
+    <update id="updateImageById">
+        update book
+        set image_url = #{imageUrl}
+        where book_id = #{bookId}
+    </update>
+
+    <!--  减库存  -->
+    <update id="reduceStock">
+        update book
+        set stock     = stock - #{number},
+            buy_count = buy_count + #{number}
+        where book_id = #{bookId}
+    </update>
+</mapper>

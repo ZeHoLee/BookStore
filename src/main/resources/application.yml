@@ -1,0 +1,43 @@
+#database config
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/book?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Hongkong
+    username: root
+    password: 123
+
+  redis:
+    port: 6379
+    host: 116.62.44.140
+    password: 123456
+    config:
+      maxTotal: 200
+      maxIdle: 20
+      maxWaitMillis: 100000
+  mail:
+    host: smtp.qq.com
+    username: 1019265267@qq.com
+    password: prxulndyqsclbffg
+
+#mybatis config
+mybatis:
+  type-aliases-package: cn.gyt.bs.entity
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    use-generated-keys: true
+    map-underscore-to-camel-case: true
+    use-column-label: true
+
+logging:
+  level:
+    cn.gyt.bs.mapper: debug
+
+ftp:
+  host: 116.62.44.140
+  username: root
+  password: Lzh00000
+  port: 22
+  rootPath: /usr/nginx/document
+
+  document:
+    url: http://116.62.44.140:9090/image/

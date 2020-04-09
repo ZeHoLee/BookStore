@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.gyt.bs.mapper.OrdersMapper">
+
+    <resultMap id="myOrder" type="cn.gyt.bs.entity.Orders">
+        <id column="order_id" property="orderId"/>
+        <result column="trade_no" property="tradeNo"/>
+        <result column="user_name" property="userName"/>
+        <result column="user_id" property="userId"/>
+        <result column="amount" property="amount"/>
+        <result column="phone" property="phone"/>
+        <result column="address" property="address"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+        <result column="express_id" property="expressId"/>
+        <result column="express_no" property="expressNo"/>
+        <result column="create_time" property="createTime"/>
+        <result column="payment_time" property="paymentTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="delivery_time" property="deliveryTime"/>
+        <association property="express" javaType="cn.gyt.bs.entity.Express">
+            <result column="express_name" property="expressName"/>
+        </association>
+        <collection property="orderItemList" ofType="cn.gyt.bs.entity.OrderItem">
+            <result column="order_id" property="orderId"/>
+            <result column="book_id" property="bookId"/>
+            <result column="number" property="number"/>
+            <result column="total" property="total"/>
+            <association property="book" javaType="cn.gyt.bs.entity.Book">
+                <result column="image_url" property="imageUrl"/>
+                <result column="book_name" property="bookName"/>
+                <result column="price" property="price"/>
+            </association>
+        </collection>
+    </resultMap>
+
+    <resultMap id="ordersNum" type="java.util.HashMap">
+        <result column="month" property="month"/>
+        <result column="num" property="num"/>
+    </resultMap>
+    <resultMap id="ordersAmount" type="java.util.HashMap">
+        <result column="month" property="month"/>
+        <result column="amount" property="amount"/>
+    </resultMap>
+
+    <sql id="OrderInfo">
+        select o.order_id,
+               o.trade_no,
+               o.user_name,
+               o.user_id,
+               o.amount,
+               o.phone,
+               o.address,
+               o.status,
+               o.remark,
+               o.create_time,
+               o.payment_time,
+               o.end_time,
+               o.delivery_time,
+               o.express_id,
+               o.express_no,
+               e.express_name,
+               i.book_id,
+               i.number,
+               i.total,
+               b.image_url,
+               b.book_name,
+               b.price
+        from orders o
+                 inner join order_item i on o.order_id = i.order_id
+                 inner join book b on i.book_id = b.book_id
+                 left join express e on o.express_id = e.express_id
+    </sql>
+
+    <!--  查询我的订单  -->
+    <select id="findMyOrders" resultMap="myOrder">
+        <include refid="OrderInfo"/>
+        where o.user_id = #{userId}
+        order by create_time desc
+        limit #{page},#{size}
+    </select>
+
+    <!--  计算我的订单总数  -->
+    <select id="myOrderCount" resultType="int">
+        select count(1)
+        from orders
+        where user_id = #{userId}
+    </select>
+
+    <!--  查询全部订单（条件可选）  -->
+    <select id="findAll" resultMap="myOrder">
+        <include refid="OrderInfo"/>
+        where 1=1
+        <if test="status != null">
+            and o.status = #{status}
+        </if>
+        <if test="expressId != null">
+            and o.express_id = #{expressId}
+        </if>
+        order by create_time desc
+        limit #{page},#{size}
+    </select>
+
+    <!--  根据条件查询订单总数  -->
+    <select id="allOrdersCount" resultType="int">
+        select count(1)
+        from orders o
+        where 1=1
+        <if test="status != null">
+            and o.status = #{status}
+        </if>
+        <if test="expressId != null">
+            and o.express_id = #{expressId}
+        </if>
+    </select>
+
+    <!--  查询订单详情  -->
+    <select id="findOrderDetail" resultMap="myOrder">
+        <include refid="OrderInfo"/>
+        where o.order_id = #{orderId}
+    </select>
+
+    <!--  计算昨天的订单总额  -->
+    <select id="yesterdayAmount" resultType="Float">
+        select sum(amount)
+        from orders
+        where status = 1
+          and to_days(now()) - to_days(payment_time) &lt;= 1
+    </select>
+
+    <!--  计算今天的订单总额  -->
+    <select id="todayAmount" resultType="Float">
+        select sum(amount)
+        from orders
+        where status = 1
+          and to_days(payment_time) = to_days(now())
+    </select>
+
+    <!--  计算今天的订单总数  -->
+    <select id="todayNumber" resultType="int">
+        select count(1)
+        from orders
+        where status = 1
+          and to_days(payment_time) = to_days(now())
+    </select>
+
+    <!--  统计当月订单数量  -->
+    <select id="ordersNumInMonth" resultMap="ordersNum">
+        select DATE_FORMAT(create_time, '%Y-%m-%d') as month, count(*) as num
+        from orders
+        where DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(create_time)
+        group by month
+    </select>
+
+    <!--  统计当月订单金额  -->
+    <select id="ordersAmountInMonth" resultMap="ordersAmount">
+        select DATE_FORMAT(create_time, '%Y-%m-%d') as month, sum(amount) as amount
+        from orders
+        where DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(create_time)
+        group by month
+    </select>
+
+    <!--  添加订单  -->
+    <insert id="insertOrders" parameterType="cn.gyt.bs.entity.Orders">
+        insert into orders(order_id, user_id, user_name, amount, phone, address, create_time, remark)
+        values (#{orderId}, #{userId}, #{userName}, #{amount}, #{phone}, #{address}, #{createTime}, #{remark})
+    </insert>
+
+    <!--  更新订单信息  -->
+    <!--    <update id="updateOrdersInfo" parameterType="String">-->
+    <!--        update orders-->
+    <!--        set status = #{status}-->
+    <!--        where order_id = #{orderId}-->
+    <!--    </update>-->
+
+    <!--  支付完成，支付宝交易号、付款时间以及订单状态  -->
+    <update id="updateTradeNoAndPaymentTime">
+        update orders
+        set trade_no     = #{tradeNo},
+            status       = #{status},
+            payment_time = #{paymentTime}
+        where order_id = #{orderId}
+    </update>
+
+    <!--  确认收获，更新交易完成时间以及订单状态  -->
+    <update id="updateEndTime">
+        update orders
+        set end_time = #{endTime},
+            status   = #{status}
+        where order_id = #{orderId}
+    </update>
+
+    <!--  发货，更新发货时间以及订单状态  -->
+    <update id="updateDeliveryTime">
+        update orders
+        set delivery_time = #{deliveryTime},
+            status        = #{status},
+            express_id    = #{expressId},
+            express_no    = #{expressNo}
+        where order_id = #{orderId}
+    </update>
+
+    <!--  取消订单  -->
+    <update id="cancelOrder">
+        update orders
+        set status = 4
+        where order_id = #{orderId}
+    </update>
+
+    <!--  删除订单  -->
+    <delete id="deleteOrder">
+        delete
+        from orders
+        where order_id = #{orderId}
+          and status = 3
+    </delete>
+</mapper>

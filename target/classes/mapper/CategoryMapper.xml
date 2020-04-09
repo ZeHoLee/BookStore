@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.gyt.bs.mapper.CategoryMapper">
+
+    <!--  分类vo  -->
+    <sql id="categoryVo">
+        select category_id, category_name
+        from category
+    </sql>
+    <!--  查询所有分类  -->
+    <select id="findCategories" resultType="cn.gyt.bs.entity.Category">
+        <include refid="categoryVo"></include>
+    </select>
+
+    <!--  查询首页的分类  -->
+    <select id="findIndexCategories" resultType="cn.gyt.bs.entity.Category">
+        <include refid="categoryVo"></include>
+        limit 0,6;
+    </select>
+
+    <!--  根据ID查询分类  -->
+    <select id="findCategoryById" resultType="cn.gyt.bs.entity.Category">
+        <include refid="categoryVo"></include>
+        where category_id = #{categoryId}
+    </select>
+
+    <!--  添加分类  -->
+    <insert id="insertCategory" parameterType="cn.gyt.bs.entity.Category">
+        insert into category(category_name)
+        values (#{categoryName})
+    </insert>
+
+    <!--  根据ID删除分类  -->
+    <delete id="deleteCategoryById">
+        delete
+        from category
+        where category_id = #{categoryId}
+    </delete>
+
+    <!--  更新分类  -->
+    <update id="updateCategoryById">
+        update category
+        set category_name = #{categoryName}
+        where category_id = #{categoryId}
+    </update>
+</mapper>

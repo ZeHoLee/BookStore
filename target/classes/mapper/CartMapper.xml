@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.gyt.bs.mapper.CartMapper">
+
+    <!--  购物车映射结果  -->
+    <resultMap id="CartResult" type="java.util.HashMap">
+        <id column="id" property="id"/>
+        <id column="user_id" property="userId"/>
+        <result column="book_id" property="bookId"/>
+        <result column="number" property="number"/>
+        <result column="book_name" property="bookName"/>
+        <result column="price" property="price"/>
+        <result column="image_url" property="imageUrl"/>
+    </resultMap>
+
+    <!--  购物车Vo  -->
+    <sql id="cartVo">
+        select cart.id, cart.user_id, cart.book_id, cart.number, book.book_name, book.price, book.image_url
+        from cart,
+             book
+        where cart.book_id = book.book_id
+    </sql>
+
+    <!--  根据用户ID查询购物车  -->
+    <select id="findCartByUserId" resultMap="CartResult">
+        <include refid="cartVo"></include>
+        and cart.user_id = #{userId} order by id desc
+    </select>
+
+
+    <select id="findExistingNum" resultType="cn.gyt.bs.entity.Cart">
+        select id, number
+        from cart
+        where user_id = #{userId}
+          and book_id = #{bookId}
+    </select>
+
+    <!--  添加购物车  -->
+    <insert id="insertCart" parameterType="cn.gyt.bs.entity.Cart">
+        insert into cart(user_id, book_id, number)
+        values (#{userId}, #{bookId}, #{number})
+    </insert>
+
+    <!--  更新已存在购物车商品的数量  -->
+    <update id="updateExistingNumber">
+        update cart
+        set number = #{number}
+        where id = #{id}
+    </update>
+
+    <!--  删除购物车内书籍  -->
+    <delete id="deleteCart">
+        delete
+        from cart
+        where user_id = #{userId}
+          and book_id = #{bookId}
+    </delete>
+</mapper>
